@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { isAdminEmail, nextAuthOptions } from "@/lib/auth";
-import { createProduct, listProducts } from "@/lib/dashboard";
+import { listProducts, createProduct } from "@/lib/dashboard";
 import { productSchema } from "@/lib/validators/commerce";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

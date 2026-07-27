@@ -13,3 +13,20 @@ export const loginSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const customerRoleSchema = z.object({
+  role: z.enum(["customer", "admin"]),
+});
+
+export const paymentStatusSchema = z.enum(["pending", "completed", "failed", "refunded"]);
+
+export const settingsSchema = z.object({
+  siteName: z.string().min(2).max(80).optional(),
+  siteDescription: z.string().max(500).optional(),
+  supportEmail: z.string().email().optional(),
+  currency: z.string().min(3).max(10).optional(),
+  paymentInstructions: z.string().max(2000).optional(),
+  isShopOpen: z.boolean().optional(),
+});
+
+export type SettingsInput = z.infer<typeof settingsSchema>;

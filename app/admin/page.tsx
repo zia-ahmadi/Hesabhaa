@@ -5,6 +5,7 @@ import { getLocale, translations } from "@/lib/i18n";
 import SiteHeaderShell from "@/components/site-header-shell";
 import AdminDashboard from "@/components/admin-dashboard";
 import { listOrders, listProducts } from "@/lib/dashboard";
+import { getDashboardStats, listCustomers, listPayments, getSiteSettings } from "@/lib/admin";
 
 export default async function AdminPage({ searchParams }: { searchParams?: Promise<{ lang?: string }> | { lang?: string } }) {
   const resolvedSearchParams = await searchParams;
@@ -29,8 +30,16 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     );
   }
 
-  const products = await listProducts();
-  const orders = await listOrders();
+  const [products, orders, stats, customers, payments, settings] = await Promise.all([
+    listProducts(),
+    listOrders(),
+    getDashboardStats(),
+    listCustomers(),
+    listPayments(),
+    getSiteSettings(),
+  ]);
+
+  const userWithRole = session.user as typeof session.user & { role?: string };
 
   return (
     <div dir={locale === "fa" ? "rtl" : "ltr"} className="min-h-screen bg-slate-50 text-slate-900">
@@ -39,7 +48,12 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
         <div className="mb-8 flex flex-col gap-2">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Admin Dashboard</p>
           <h1 className="text-4xl font-semibold">Manage your shop</h1>
-          <p className="text-slate-600">Add products, edit them, and update order status from one place.</p>
+          <p className="text-slate-600">
+            Signed in as <span className="font-semibold text-slate-900">{session.user.email}</span>
+            {userWithRole.role === "admin" || isAdminEmail(session.user.email) ? (
+              <span className="ml-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">ADMIN</span>
+            ) : null}
+          </p>
         </div>
 
         <AdminDashboard
@@ -50,15 +64,23 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
             description: product.description,
             price: Number(product.price),
             image: product.image,
+            stock: (product as { stock?: number }).stock ?? 0,
+            isActive: (product as { isActive?: boolean }).isActive ?? true,
           }))}
           initialOrders={orders.map((order) => ({
             id: order.id,
             status: order.status,
             total: Number(order.total),
+            quantity: order.quantity,
             createdAt: new Date(order.createdAt).toLocaleDateString(),
             product: { name: order.product?.name },
-            user: { name: order.user?.name },
+            user: { name: order.user?.name, email: order.user?.email },
+            payment: (order as { payment?: { status?: string } | null }).payment ?? null,
           }))}
+          initialStats={stats}
+          initialCustomers={customers}
+          initialPayments={payments as unknown as Parameters<typeof AdminDashboard>[0]["initialPayments"]}
+          initialSettings={settings}
           locale={locale}
         />
       </main>

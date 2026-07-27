@@ -36,28 +36,49 @@ const demoProducts: ProductItem[] = [
   },
 ];
 
-export async function getProducts() {
-  try {
-    if (!process.env.DATABASE_URL) {
-      return demoProducts;
-    }
+let _dbViable: boolean | null = null;
 
-    const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
-    return products.length ? products : demoProducts;
+async function isViable() {
+  if (_dbViable === false) return false;
+  if (!process.env.DATABASE_URL) {
+    _dbViable = false;
+    return false;
+  }
+  if (_dbViable === true) return true;
+  try {
+    await prisma.$queryRawUnsafe("SELECT 1").catch(() => {
+      throw new Error("db ping failed");
+    });
+    _dbViable = true;
+    return true;
   } catch {
-    return demoProducts;
+    _dbViable = false;
+    return false;
   }
 }
 
-export async function getProductBySlug(slug: string) {
+async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  if (!(await isViable())) return fallback;
   try {
-    if (!process.env.DATABASE_URL) {
-      return demoProducts.find((product) => product.slug === slug) ?? null;
-    }
-
-    const product = await prisma.product.findUnique({ where: { slug } });
-    return product ?? demoProducts.find((item) => item.slug === slug) ?? null;
+    const p = fn();
+    if (!p || typeof p.then !== "function") return p as T;
+    return await p;
   } catch {
-    return demoProducts.find((product) => product.slug === slug) ?? null;
+    return fallback;
   }
+}
+
+export async function getProducts() {
+  return safe(async () => {
+    const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
+    return products.length ? products : demoProducts;
+  }, demoProducts);
+}
+
+export async function getProductBySlug(slug: string) {
+  const fallback = demoProducts.find((product) => product.slug === slug) ?? null;
+  return safe(async () => {
+    const product = await prisma.product.findUnique({ where: { slug } });
+    return product ?? fallback;
+  }, fallback);
 }

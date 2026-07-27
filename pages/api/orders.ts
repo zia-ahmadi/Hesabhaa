@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { nextAuthOptions } from "@/lib/auth";
 import { createOrder } from "@/lib/dashboard";
+import { createPayment } from "@/lib/admin";
 import { orderSchema } from "@/lib/validators/commerce";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -25,6 +26,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: "Unauthorized" });
     }
     const order = await createOrder(user.id, parsed.data.productId, parsed.data.quantity);
+
+    const autoCreatePayment = Boolean(req.body.autoCreatePayment);
+    if (autoCreatePayment) {
+      try {
+        await createPayment(
+          user.id,
+          (order as unknown as { id: string }).id,
+          (order as unknown as { total: number }).total,
+          "manual",
+          req.body.reference ?? undefined
+        );
+      } catch {
+      }
+    }
+
     return res.status(201).json(order);
   } catch (error) {
     return res.status(400).json({ error: error instanceof Error ? error.message : "Unable to place order" });
