@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -12,6 +13,7 @@ export default function LoginForm() {
   const router = useRouter();
   const locale = getLocale(searchParams?.get("lang") ?? undefined);
   const t = translations[locale];
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -21,6 +23,7 @@ export default function LoginForm() {
   });
 
   const onSubmit = async (data: LoginInput) => {
+    setFormError(null);
     const response = await signIn("credentials", {
       redirect: false,
       email: data.email,
@@ -29,7 +32,10 @@ export default function LoginForm() {
 
     if (response?.ok) {
       router.push(`/?lang=${locale}`);
+      return;
     }
+
+    setFormError(response?.error === "CredentialsSignin" ? "ایمیل یا رمز عبور اشتباه است." : "ورود انجام نشد. لطفا دوباره تلاش کنید.");
   };
 
   return (
@@ -57,12 +63,22 @@ export default function LoginForm() {
             {errors.password && <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>}
           </label>
 
+          {formError && <p className="text-sm text-red-600">{formError}</p>}
+
           <button
             type="submit"
             disabled={isSubmitting}
             className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {t.login}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => signIn("google", { callbackUrl: `/?lang=${locale}` })}
+            className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Continue with Google
           </button>
         </form>
       </div>

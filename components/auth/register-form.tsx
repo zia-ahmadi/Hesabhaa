@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +13,7 @@ export default function RegisterForm() {
   const router = useRouter();
   const locale = getLocale(searchParams?.get("lang") ?? undefined);
   const t = translations[locale];
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -20,15 +23,21 @@ export default function RegisterForm() {
   });
 
   const onSubmit = async (data: RegisterInput) => {
+    setFormError(null);
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
 
+    const payload = await response.json().catch(() => ({}));
+
     if (response.ok) {
       router.push(`/auth/login?lang=${locale}`);
+      return;
     }
+
+    setFormError(payload.error ?? "ثبت‌نام انجام نشد. لطفا دوباره تلاش کنید.");
   };
 
   return (
@@ -66,12 +75,22 @@ export default function RegisterForm() {
             {errors.password && <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>}
           </label>
 
+          {formError && <p className="text-sm text-red-600">{formError}</p>}
+
           <button
             type="submit"
             disabled={isSubmitting}
             className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {t.register}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => signIn("google", { callbackUrl: `/?lang=${locale}` })}
+            className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Continue with Google
           </button>
         </form>
       </div>
