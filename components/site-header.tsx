@@ -1,0 +1,66 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import { defaultLocale, getLocale, translations } from "@/lib/i18n";
+
+export default function SiteHeader() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const locale = getLocale(searchParams?.get("lang") ?? undefined);
+  const t = translations[locale];
+  const session = useSession();
+  const nextLocale = locale === "en" ? "fa" : "en";
+  const currentUrl = `${pathname}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
+
+  return (
+    <header className="border-b border-slate-200 bg-white/90 px-5 py-4 backdrop-blur-xl sm:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <Link href={`/?lang=${locale}`} className="text-xl font-semibold text-slate-900">
+          {t.siteName}
+        </Link>
+        <nav className="flex flex-1 items-center justify-end gap-4 text-sm font-medium text-slate-700 sm:gap-6">
+          <Link href={`/?lang=${locale}`} className="hover:text-slate-900">
+            {t.home}
+          </Link>
+          <Link href={`/products?lang=${locale}`} className="hover:text-slate-900">
+            {t.productsTitle}
+          </Link>
+          {session.status === "authenticated" ? (
+            <>
+              <Link href={`/profile?lang=${locale}`} className="hover:text-slate-900">
+                {t.profile}
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: `/?lang=${locale}` })}
+                className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+              >
+                {t.logout}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href={`/auth/login?lang=${locale}`} className="hover:text-slate-900">
+                {t.login}
+              </Link>
+              <Link
+                href={`/auth/register?lang=${locale}`}
+                className="rounded-full bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-700"
+              >
+                {t.register}
+              </Link>
+            </>
+          )}
+          <Link
+            href={`${pathname}?lang=${nextLocale}`}
+            className="rounded-full border border-slate-200 px-4 py-2 text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+          >
+            {t.language}
+          </Link>
+        </nav>
+      </div>
+    </header>
+  );
+}
