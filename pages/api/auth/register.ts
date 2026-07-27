@@ -1,19 +1,22 @@
 import { hash } from "bcrypt";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
+import { registerSchema } from "@/lib/validators/auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: "Missing fields" });
+  const parsed = registerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid registration details" });
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const { name, email, password } = parsed.data;
+  const normalizedEmail = email.toLowerCase();
+
+  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (existing) {
     return res.status(409).json({ error: "Email already in use" });
   }
@@ -22,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const user = await prisma.user.create({
     data: {
       name,
-      email,
+      email: normalizedEmail,
       hashedPassword,
     },
   });
