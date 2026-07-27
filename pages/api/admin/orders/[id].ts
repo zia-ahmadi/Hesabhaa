@@ -1,12 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
-import { nextAuthOptions } from "@/lib/auth";
+import { isAdminEmail, nextAuthOptions } from "@/lib/auth";
 import { updateOrderStatus } from "@/lib/dashboard";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, nextAuthOptions);
-  if (!session?.user?.email) {
-    return res.status(401).json({ error: "Unauthorized" });
+  if (!session?.user?.email || !isAdminEmail(session.user.email)) {
+    return res.status(403).json({ error: "Administrator access is required" });
   }
 
   if (req.method !== "PATCH") {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { defaultLocale, getLocale, translations } from "@/lib/i18n";
+import { getLocale, translations } from "@/lib/i18n";
 
 export default function SiteHeader() {
   const pathname = usePathname();

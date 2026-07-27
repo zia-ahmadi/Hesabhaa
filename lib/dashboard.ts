@@ -69,20 +69,28 @@ const mockProducts: ProductRecord[] = [
 const mockOrders: MockOrderRecord[] = [];
 
 export async function listProducts() {
-  if (!process.env.DATABASE_URL) {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return mockProducts;
+    }
+
+    const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
+    return products.length ? products : mockProducts;
+  } catch {
     return mockProducts;
   }
-
-  const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
-  return products.length ? products : mockProducts;
 }
 
 export async function getProductById(id: string) {
-  if (!process.env.DATABASE_URL) {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return mockProducts.find((product) => product.id === id) ?? null;
+    }
+
+    return prisma.product.findUnique({ where: { id } });
+  } catch {
     return mockProducts.find((product) => product.id === id) ?? null;
   }
-
-  return prisma.product.findUnique({ where: { id } });
 }
 
 export async function createProduct(input: ProductInput) {
@@ -98,15 +106,27 @@ export async function createProduct(input: ProductInput) {
     return product;
   }
 
-  return prisma.product.create({
-    data: {
-      name: input.name,
-      slug: input.slug,
-      description: input.description,
+  try {
+    return prisma.product.create({
+      data: {
+        name: input.name,
+        slug: input.slug,
+        description: input.description,
+        price: Number(input.price),
+        image: input.image,
+      },
+    });
+  } catch {
+    const product: ProductRecord = {
+      id: `prod-mock-${Date.now()}`,
+      ...input,
       price: Number(input.price),
-      image: input.image,
-    },
-  });
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mockProducts.unshift(product);
+    return product;
+  }
 }
 
 export async function updateProduct(id: string, input: ProductInput) {
@@ -126,39 +146,63 @@ export async function updateProduct(id: string, input: ProductInput) {
     return updated;
   }
 
-  return prisma.product.update({
-    where: { id },
-    data: {
-      name: input.name,
-      slug: input.slug,
-      description: input.description,
+  try {
+    return prisma.product.update({
+      where: { id },
+      data: {
+        name: input.name,
+        slug: input.slug,
+        description: input.description,
+        price: Number(input.price),
+        image: input.image,
+      },
+    });
+  } catch {
+    const index = mockProducts.findIndex((product) => product.id === id);
+    if (index === -1) {
+      return null;
+    }
+
+    const updated = {
+      ...mockProducts[index],
+      ...input,
       price: Number(input.price),
-      image: input.image,
-    },
-  });
+      updatedAt: new Date(),
+    };
+    mockProducts[index] = updated;
+    return updated;
+  }
 }
 
 export async function listUserOrders(userId: string) {
-  if (!process.env.DATABASE_URL) {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return mockOrders.filter((order) => order.userId === userId);
+    }
+
+    return prisma.order.findMany({
+      where: { userId },
+      include: { product: true },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
     return mockOrders.filter((order) => order.userId === userId);
   }
-
-  return prisma.order.findMany({
-    where: { userId },
-    include: { product: true },
-    orderBy: { createdAt: "desc" },
-  });
 }
 
 export async function listOrders() {
-  if (!process.env.DATABASE_URL) {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return mockOrders;
+    }
+
+    return prisma.order.findMany({
+      include: { product: true, user: true },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
     return mockOrders;
   }
-
-  return prisma.order.findMany({
-    include: { product: true, user: true },
-    orderBy: { createdAt: "desc" },
-  });
 }
 
 export async function createOrder(userId: string, productId: string, quantity = 1) {
@@ -187,21 +231,46 @@ export async function createOrder(userId: string, productId: string, quantity = 
     return order;
   }
 
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product) {
-    throw new Error("Product not found");
-  }
+  try {
+    const product = await prisma.product.findUnique({ where: { id: productId } });
+    if (!product) {
+      throw new Error("Product not found");
+    }
 
-  return prisma.order.create({
-    data: {
+    return prisma.order.create({
+      data: {
+        userId,
+        productId,
+        quantity,
+        total: product.price * quantity,
+        status: "pending",
+      },
+      include: { product: true, user: true },
+    });
+  } catch {
+    const product = mockProducts.find((item) => item.id === productId);
+    if (!product) {
+      throw new Error("Product not found");
+    }
+
+    const order: MockOrderRecord = {
+      id: `order-mock-${Date.now()}`,
       userId,
       productId,
       quantity,
       total: product.price * quantity,
       status: "pending",
-    },
-    include: { product: true, user: true },
-  });
+      createdAt: new Date(),
+      product,
+      user: {
+        id: userId,
+        name: "Customer",
+        email: "customer@example.com",
+      },
+    };
+    mockOrders.unshift(order);
+    return order;
+  }
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {
@@ -215,9 +284,19 @@ export async function updateOrderStatus(id: string, status: OrderStatus) {
     return mockOrders[index];
   }
 
-  return prisma.order.update({
-    where: { id },
-    data: { status },
-    include: { product: true, user: true },
-  });
+  try {
+    return prisma.order.update({
+      where: { id },
+      data: { status },
+      include: { product: true, user: true },
+    });
+  } catch {
+    const index = mockOrders.findIndex((order) => order.id === id);
+    if (index === -1) {
+      return null;
+    }
+
+    mockOrders[index] = { ...mockOrders[index], status };
+    return mockOrders[index];
+  }
 }

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getProducts } from "@/lib/db";
 import { getLocale, translations } from "@/lib/i18n";
 import SiteHeaderShell from "@/components/site-header-shell";

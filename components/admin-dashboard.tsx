@@ -39,6 +39,7 @@ export default function AdminDashboard({
   initialOrders: OrderRow[];
   locale: Locale;
 }) {
+  void locale;
   const [products, setProducts] = useState(initialProducts);
   const [orders, setOrders] = useState(initialOrders);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
