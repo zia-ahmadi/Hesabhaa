@@ -3,6 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcrypt";
 import { prisma } from "@/lib/prisma";
 
+export function isAdminEmail(email?: string | null) {
+  return email?.toLowerCase() === (process.env.ADMIN_EMAIL || "admin@bastaha.com").toLowerCase();
+}
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   session: {
@@ -37,6 +41,22 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  callbacks: {
+    async session({ session, token }) {
+      if (session.user) {
+        const user = session.user as typeof session.user & { id?: string; role?: string };
+        user.id = token.sub ?? "";
+        user.role = isAdminEmail(token.email || session.user.email) ? "admin" : "user";
+      }
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.sub = user.id;
+      }
+      return token;
+    },
+  },
 };
 
 export { authOptions as nextAuthOptions };

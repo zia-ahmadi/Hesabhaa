@@ -2,20 +2,21 @@ import Link from "next/link";
 import { getProducts } from "@/lib/db";
 import { getLocale, translations } from "@/lib/i18n";
 import ProductCard from "@/components/product-card";
-import SiteHeader from "@/components/site-header";
+import SiteHeaderShell from "@/components/site-header-shell";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: { lang?: string };
+  searchParams?: Promise<{ lang?: string }> | { lang?: string };
 }) {
-  const locale = getLocale(searchParams?.lang);
+  const resolvedSearchParams = await searchParams;
+  const locale = getLocale(resolvedSearchParams?.lang);
   const t = translations[locale];
   const products = await getProducts();
 
   return (
     <div dir={locale === "fa" ? "rtl" : "ltr"} className="min-h-screen bg-slate-50 text-slate-900">
-      <SiteHeader />
+      <SiteHeaderShell />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-10 sm:px-8">
         <section className="grid gap-8 overflow-hidden rounded-[2rem] bg-slate-900 px-6 py-12 text-white shadow-xl sm:grid-cols-[1.4fr_0.9fr] sm:items-center sm:px-10">
           <div className="space-y-6">

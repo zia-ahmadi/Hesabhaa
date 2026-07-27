@@ -12,7 +12,9 @@ export default function SiteHeader() {
   const t = translations[locale];
   const session = useSession();
   const nextLocale = locale === "en" ? "fa" : "en";
-  const currentUrl = `${pathname}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`;
+  const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@bastaha.com").toLowerCase();
+  const isAdmin = session.data?.user?.email?.toLowerCase() === adminEmail;
+  const isAuthenticated = session.status === "authenticated";
 
   return (
     <header className="border-b border-slate-200 bg-white/90 px-5 py-4 backdrop-blur-xl sm:px-8">
@@ -27,11 +29,19 @@ export default function SiteHeader() {
           <Link href={`/products?lang=${locale}`} className="hover:text-slate-900">
             {t.productsTitle}
           </Link>
-          {session.status === "authenticated" ? (
+          {isAuthenticated ? (
             <>
+              <Link href={`/dashboard?lang=${locale}`} className="hover:text-slate-900">
+                Dashboard
+              </Link>
               <Link href={`/profile?lang=${locale}`} className="hover:text-slate-900">
                 {t.profile}
               </Link>
+              {isAdmin ? (
+                <Link href={`/admin?lang=${locale}`} className="hover:text-slate-900">
+                  Admin
+                </Link>
+              ) : null}
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: `/?lang=${locale}` })}

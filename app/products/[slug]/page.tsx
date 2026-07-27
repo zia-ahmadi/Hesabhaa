@@ -1,22 +1,25 @@
 import { getProductBySlug } from "@/lib/db";
 import { getLocale, translations } from "@/lib/i18n";
-import SiteHeader from "@/components/site-header";
+import SiteHeaderShell from "@/components/site-header-shell";
+import OrderButton from "@/components/order-button";
 
 export default async function ProductPage({
   params,
   searchParams,
 }: {
-  params: { slug: string };
-  searchParams?: { lang?: string };
+  params: Promise<{ slug: string }> | { slug: string };
+  searchParams?: Promise<{ lang?: string }> | { lang?: string };
 }) {
-  const locale = getLocale(searchParams?.lang);
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const locale = getLocale(resolvedSearchParams?.lang);
   const t = translations[locale];
-  const product = await getProductBySlug(params.slug);
+  const product = await getProductBySlug(resolvedParams.slug);
 
   if (!product) {
     return (
       <div dir={locale === "fa" ? "rtl" : "ltr"} className="min-h-screen bg-slate-50 text-slate-900">
-        <SiteHeader />
+        <SiteHeaderShell />
         <main className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8">
           <p className="rounded-3xl bg-white p-8 text-center text-slate-700 shadow-lg">محصول یافت نشد.</p>
         </main>
@@ -26,7 +29,7 @@ export default async function ProductPage({
 
   return (
     <div dir={locale === "fa" ? "rtl" : "ltr"} className="min-h-screen bg-slate-50 text-slate-900">
-      <SiteHeader />
+      <SiteHeaderShell />
       <main className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-[2rem] bg-white p-8 shadow-xl">
@@ -35,9 +38,7 @@ export default async function ProductPage({
             <p className="mt-4 text-slate-600">{product.description}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-3xl font-semibold text-slate-900">${product.price.toFixed(2)}</span>
-              <button className="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">
-                افزودن به سبد خرید
-              </button>
+              <OrderButton productId={product.id} locale={locale} />
             </div>
           </div>
 

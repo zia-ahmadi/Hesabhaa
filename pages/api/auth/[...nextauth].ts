@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcrypt";
 import { prisma } from "@/lib/prisma";
+import { isAdminEmail } from "@/lib/auth";
 
 export default NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -40,7 +41,9 @@ export default NextAuth({
   callbacks: {
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.sub;
+        const user = session.user as typeof session.user & { id?: string; role?: string };
+        user.id = token.sub ?? "";
+        user.role = isAdminEmail(token.email || session.user.email) ? "admin" : "user";
       }
       return session;
     },
