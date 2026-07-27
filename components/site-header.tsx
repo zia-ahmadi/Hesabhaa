@@ -17,16 +17,16 @@ export default function SiteHeader() {
   const isAuthenticated = session.status === "authenticated";
 
   return (
-    <header className="border-b border-slate-200 bg-white/90 px-5 py-4 backdrop-blur-xl sm:px-8">
+    <header className="border-b border-slate-200/80 bg-white/90 px-5 py-4 shadow-sm backdrop-blur sm:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <Link href={`/?lang=${locale}`} className="text-xl font-semibold text-slate-900">
+        <Link href={`/?lang=${locale}`} className="text-xl font-semibold tracking-tight text-slate-900">
           {t.siteName}
         </Link>
         <nav className="flex flex-1 items-center justify-end gap-4 text-sm font-medium text-slate-700 sm:gap-6">
-          <Link href={`/?lang=${locale}`} className="hover:text-slate-900">
+          <Link href={`/?lang=${locale}`} className="transition hover:text-slate-900">
             {t.home}
           </Link>
-          <Link href={`/products?lang=${locale}`} className="hover:text-slate-900">
+          <Link href={`/products?lang=${locale}`} className="transition hover:text-slate-900">
             {t.productsTitle}
           </Link>
           {isAuthenticated ? (
@@ -57,7 +57,7 @@ export default function SiteHeader() {
               </Link>
               <Link
                 href={`/auth/register?lang=${locale}`}
-                className="rounded-full bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-700"
+                className="rounded-full bg-amber-700 px-4 py-2 text-white transition hover:bg-amber-800"
               >
                 {t.register}
               </Link>
